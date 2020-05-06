@@ -94,7 +94,7 @@ workflows:
                 - master
       - deploy_dev:
           requires:
-            - test
+            - lint_and_unittest
           filters:
             branches:
               only:
