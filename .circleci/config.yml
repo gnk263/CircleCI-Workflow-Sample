@@ -24,7 +24,7 @@ commands:
     parameters:
       env:
         type: enum
-        enum: ["prod", "dev"]
+        enum: ["prod", "pre_prod", "dev"]
     steps:
       - checkout
       - restore
@@ -67,6 +67,14 @@ jobs:
       - restore
       - deploy:
           env: dev
+
+  deploy_pre_prod:
+    executor: my-executor
+    steps:
+      - checkout
+      - restore
+      - deploy:
+          env: pre_prod
 
   deploy_prod:
     executor: my-executor
