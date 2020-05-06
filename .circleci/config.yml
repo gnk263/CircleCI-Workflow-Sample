@@ -1,0 +1,116 @@
+version: 2.1
+executors:
+  my-executor:
+    docker:
+      - image: circleci/python:3.7.2
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
+    working_directory: ~/work
+
+commands:
+  restore:
+    steps:
+      - restore_cache:
+          key: work-v1-{{ .Branch }}-{{ .Revision }}
+
+  save:
+    steps:
+      - save_cache:
+          paths:
+            - ".venv"
+          key: work-v1-{{ .Branch }}-{{ .Revision }}
+
+  deploy:
+    parameters:
+      env:
+        type: enum
+        enum: ["prod", "dev"]
+    steps:
+      - checkout
+      - restore
+      - run:
+          name: deploy
+          command: |
+            source .venv/bin/activate
+            echo << parameters.env >>
+            echo deploy-command
+
+jobs:
+  setup:
+    executor: my-executor
+    steps:
+      - checkout
+      - restore
+      - run:
+          name: install
+          command: |
+            sudo pip install pipenv
+            pipenv install
+      - save
+
+  lint_and_unittest:
+    executor: my-executor
+    steps:
+      - checkout
+      - restore
+      - run:
+          name: lint_and_unittest
+          command: |
+            source .venv/bin/activate
+            echo lint-command
+            echo unittest-command
+
+  deploy_dev:
+    executor: my-executor
+    steps:
+      - checkout
+      - restore
+      - deploy:
+          env: dev
+
+  deploy_prod:
+    executor: my-executor
+    steps:
+      - checkout
+      - restore
+      - deploy:
+          env: prod
+
+workflows:
+  version: 2.1
+  release-workflow:
+    jobs:
+      - setup:
+          filters:
+            branches:
+              only:
+                - master
+      - lint_and_unittest:
+          requires:
+            - setup
+          filters:
+            branches:
+              only:
+                - master
+      - deploy_dev:
+          requires:
+            - test
+          filters:
+            branches:
+              only:
+                - master
+      - approve_for_prod:
+          type: approval
+          requires:
+            - deploy_dev
+          filters:
+            branches:
+              only:
+                - master
+      - deploy_prod:
+          requires:
+            - approve_for_prod
+          filters:
+            branches:
+              only:
+                - master
