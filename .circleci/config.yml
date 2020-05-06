@@ -100,7 +100,16 @@ workflows:
             branches:
               only:
                 - master
-      - deploy_dev:
+      - approve_for_dev:
+          type: approval
+          requires:
+            - lint_and_unittest
+          filters:
+            branches:
+              only:
+                - master
+      - approve_for_pre_prod:
+          type: approval
           requires:
             - lint_and_unittest
           filters:
@@ -110,7 +119,21 @@ workflows:
       - approve_for_prod:
           type: approval
           requires:
-            - deploy_dev
+            - lint_and_unittest
+          filters:
+            branches:
+              only:
+                - master
+      - deploy_dev:
+          requires:
+            - approve_for_dev
+          filters:
+            branches:
+              only:
+                - master
+      - deploy_pre_prod:
+          requires:
+            - approve_for_pre_prod
           filters:
             branches:
               only:
